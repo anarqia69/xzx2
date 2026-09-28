@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Create a local preview profile to explore five ApexYield VIP tiers from $100 to $20,000. Real accounts and payments are not connected.">
+  <title>ApexYield | Home</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0a0c'/%3E%3Cpath d='M7 24 16 7l9 17h-6l-3-7-3 7Z' fill='%2322d3ee'/%3E%3C/svg%3E">
+  <!--
+    STANDALONE FRONT-END PREVIEW
+
+    Save as an .html file and open it in a modern browser. No build, CDN,
+    wallet connection, secret key, or internet connection is required.
+
+    This file repairs the supplied markup and implements the interface.
+    It is not a deposit processor, financial account, or yield-generating system.
+    Rates and the recipient address below came from the supplied example;
+    they have not been independently verified.
+
+    Before a real-money release, a separate backend must:
+    - Authenticate the customer and create an order using server-owned terms.
+    - Specify the exact network, token mint, recipient, amount, and payment reference.
+    - Verify finalized, successful transfers on-chain, including token and recipient.
+    - Bind payments to the correct order and prevent duplicate credits atomically.
+    - Keep an authoritative account ledger and implement funded payout/withdrawal rules.
+
+    Do not activate accounts from a button click, a pasted transaction ID, or
+    browser storage. Do not put private keys in this file. SOL and USDT are
+    different assets. Plan prices are now displayed in USD; no USD-to-USDT
+    conversion or live payment quote is implemented. The user specified
+    VIP 1 at $100 and VIP 5 at $20,000. Existing intermediate prices are
+    retained; VIP 4 uses an editable $10,000 default. Rates for VIP 4 and
+    VIP 5 are unset because none were supplied. Do not invent user counts,
+    testimonials, security certifications, or return guarantees.
+
+    REGISTRATION PREVIEW
+    Name and email are stored only in sessionStorage in the current browser
+    tab, with an in-memory fallback when storage is blocked. No password,
+    email verification, server account, or real authentication is provided.
+    Hidden plan markup is public source: this UI gate is not access control.
+    A live release must enforce registration and authorization on the server.
+    Sign out removes the preview profile and hides the plans again.
+  -->
+  <style>
+    :root {
+      --bg: #0a0a0c;
+      --surface: #121317;
+      --text: #f5f6f8;
+      --muted: #a0a6b4;
+      --line: #2b2e37;
+      --cyan: #22d3ee;
+      --cyan-dark: #083b45;
+      --warning: #f2ca81;
+      --radius: 20px;
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    html { min-width: 280px; scroll-behavior: smooth; scroll-padding-top: 24px; }
+    body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.6; }
+    body.modal-open { overflow: hidden; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { opacity: .65; cursor: not-allowed; }
+    button, summary, a { -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 3px solid var(--cyan); outline-offset: 4px; }
+    [hidden] { display: none !important; }
+    .container { width: min(1140px, calc(100% - 48px)); margin-inline: auto; }
+    .nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-block: 27px; border-bottom: 1px solid #202229; }
+    .brand { font-size: 1.4rem; font-weight: 850; letter-spacing: -.065em; line-height: 1.2; }
+    .brand span { color: var(--cyan); }
+    a.brand { text-decoration: none; color: var(--text); }
+    .nav-links { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .nav-links a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 13px; color: var(--muted); font-size: .875rem; font-weight: 550; text-decoration: none; border-radius: 8px; }
+    .nav-links a:hover { color: var(--text); background: #1c2027; }
+    .nav-account { display: flex; align-items: center; gap: 9px; }
+    .nav-account .button { min-height: 40px; padding: 8px 13px; font-size: .875rem; }
+    .preview-label { display: inline-flex; align-items: center; padding: 5px 11px; font-size: .8125rem; font-weight: 550; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; white-space: nowrap; }
+    main { padding-block: 36px; }
+    .home { padding: 48px 0 60px; }
+    .home h1 { max-width: 940px; font-size: clamp(2.75rem, 6.4vw, 5rem); margin-bottom: 24px; }
+    .home h1 span { display: block; }
+    .home-copy { max-width: 665px; color: #b7bdc9; font-size: 1.125rem; margin: 0 0 28px; line-height: 1.8; }
+    .home-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    a.button { text-decoration: none; }
+    .overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 40px 0 0; border: 1px solid var(--line); border-radius: 14px; background: #101216; }
+    .overview > div { padding: 22px 26px; }
+    .overview > div + div { border-left: 1px solid var(--line); }
+    .overview dt { color: var(--muted); font-size: .875rem; }
+    .overview dd { margin: 4px 0 0; color: var(--text); font-size: 1.75rem; font-weight: 700; letter-spacing: -.035em; }
+    .about { padding: 36px 0 54px; border-top: 1px solid var(--line); }
+    .about h2, .plans-header h2 { font-size: clamp(1.8rem, 3.4vw, 2.6rem); line-height: 1.2; letter-spacing: -.045em; }
+    .about-lead { color: var(--muted); max-width: 780px; margin: 16px 0 24px; }
+    .principles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+    .principles article { padding-top: 18px; border-top: 1px solid #2c4248; }
+    .principles h3 { font-size: 1rem; margin: 0 0 8px; font-weight: 650; }
+    .principles p { color: var(--muted); font-size: .9375rem; margin: 0; }
+    .plans-section { padding-top: 38px; border-top: 1px solid var(--line); }
+    .plans-header { margin-bottom: 28px; }
+    .plans-header p:last-child { color: var(--muted); max-width: 700px; margin: 13px 0 0; }
+    .registration { max-width: 540px; margin: 38px auto 54px; padding: 32px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+    .registration h2 { font-size: clamp(1.9rem, 4vw, 2.5rem); line-height: 1.15; letter-spacing: -.04em; }
+    .registration-intro { color: var(--muted); margin: 15px 0 24px; }
+    .field { margin-bottom: 20px; }
+    .field label { display: block; font-weight: 600; font-size: .9375rem; margin-bottom: 8px; }
+    .field input { width: 100%; min-height: 48px; padding: 12px 14px; border: 1px solid #414957; border-radius: 9px; background: #0b0e13; color: var(--text); font-size: 1rem; }
+    .field input::placeholder { color: #818a9b; opacity: 1; }
+    .field input[aria-invalid="true"] { border-color: #f2ca81; }
+    .field-error { margin: 6px 0 0; color: var(--warning); font-size: .875rem; }
+    .field-error:empty { display: none; }
+    .registration-note { padding: 13px 14px; border: 1px solid var(--line); border-radius: 9px; color: #b7bdc9; font-size: .875rem; margin: 0 0 22px; }
+    .registration-back { display: block; width: fit-content; margin: 18px auto 0; color: var(--muted); text-underline-offset: 4px; font-size: .9375rem; }
+    .member-summary { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 20px; margin: 0 0 28px; background: #101c21; border: 1px solid #244854; border-radius: 13px; }
+    .member-summary h3 { font-size: 1.125rem; margin: 0 0 3px; overflow-wrap: anywhere; }
+    .member-summary p { color: #b7bdc9; margin: 0; font-size: .875rem; overflow-wrap: anywhere; }
+    .member-info { min-width: 0; flex: 1 1 220px; }
+    .profile-note { color: var(--muted); font-size: .875rem; margin: 0 0 24px; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+    [tabindex="-1"]:focus { outline: none; }
+    .intro { max-width: 780px; margin: 0 auto 38px; text-align: center; }
+    .eyebrow { color: var(--cyan); font-size: .8125rem; font-weight: 650; letter-spacing: .16em; text-transform: uppercase; margin: 0 0 17px; }
+    h1 { margin: 0 0 20px; font-size: clamp(2.25rem, 5.3vw, 4rem); font-weight: 780; line-height: 1.07; letter-spacing: -.055em; text-wrap: balance; }
+    h1 span { color: var(--cyan); }
+    .intro > p:last-child { max-width: 560px; color: var(--muted); margin: 0 auto; font-size: 1rem; line-height: 1.7; }
+    .preview-notice { margin: 0 0 24px; padding: 14px 18px; color: #d4d9e3; border: 1px solid var(--line); border-left: 3px solid var(--cyan); border-radius: 8px; background: #101216; font-size: .875rem; }
+    .preview-notice strong { color: var(--text); font-weight: 650; }
+    .tiers { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+    .vip-card { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 21px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); transition: transform .2s, border-color .2s, background .2s; }
+    .vip-card:last-child { border-top: 3px solid var(--cyan); padding-top: 19px; }
+    .vip-card:hover, .vip-card:focus-within { border-color: #246470; background: #13191d; }
+    @media (hover: hover) { .vip-card:hover { transform: translateY(-4px); } }
+    .card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .card-top h3 { font-size: 1.25rem; margin: 0; line-height: 1.4; letter-spacing: -.035em; }
+    h2 { font-size: 1.25rem; margin: 0; line-height: 1.4; letter-spacing: -.035em; }
+    .tier-number { color: #b3bfcd; font-size: .8125rem; font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .plan-price { color: var(--cyan); margin: 24px 0 2px; font-size: clamp(1.65rem, 2.35vw, 2rem); font-weight: 750; line-height: 1.3; letter-spacing: -.05em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .price-label { color: var(--muted); font-size: .875rem; margin: 0 0 21px; }
+    .rate { color: var(--text); margin: 6px 0 0; font-size: 1.125rem; font-weight: 650; line-height: 1.4; font-variant-numeric: tabular-nums; }
+    .rate small { font-size: .875rem; font-weight: 500; }
+    .amount-row { border-top: 1px solid var(--line); padding-top: 16px; margin: auto 0 21px; }
+    .amount-row dt { color: var(--muted); font-size: .875rem; }
+    .amount-row dd { margin: 5px 0 0; font-size: 1.125rem; font-weight: 650; }
+    .amount-row dd span { color: var(--muted); font-weight: 500; font-size: .875rem; }
+    .button { display: inline-flex; justify-content: center; align-items: center; gap: 10px; min-height: 46px; padding: 10px 17px; border: 1px solid #363b48; border-radius: 9px; background: #232731; color: var(--text); font-weight: 650; font-size: .9375rem; transition: background .16s, border-color .16s; }
+    .button:hover { background: #313846; border-color: #566375; }
+    .button.primary { color: #032c33; background: var(--cyan); border-color: var(--cyan); }
+    .button.primary:hover { background: #67e8f9; border-color: #67e8f9; }
+    .button.full { width: 100%; }
+    .button.secondary { background: transparent; }
+    .button.secondary:hover { background: #242833; }
+    .rates-note { max-width: 720px; text-align: center; margin: 26px auto 0; font-size: .875rem; color: var(--muted); }
+    .footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 25px; border-top: 1px solid #202229; margin-top: 30px; padding-block: 22px 28px; color: var(--muted); font-size: .8125rem; }
+    .footer p { margin: 0; }
+    .noscript { padding: 20px; margin-block: 20px; background: #302410; color: #ffdb92; border-radius: 8px; }
+    dialog { width: min(496px, calc(100% - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 0; border: 1px solid #3b4452; border-radius: 22px; background: #13161c; color: var(--text); box-shadow: 0 24px 120px #0009; overflow-y: auto; overscroll-behavior: contain; }
+    dialog::backdrop { background: #030509d9; backdrop-filter: blur(7px); }
+    .modal-inner { padding: 28px; }
+    .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 21px; }
+    .modal-header .eyebrow { font-size: .75rem; margin-bottom: 7px; }
+    .modal-header h2 { font-size: 1.75rem; }
+    .close { border: 1px solid var(--line); border-radius: 8px; background: transparent; width: 44px; height: 44px; flex-shrink: 0; color: #d3d8e2; font-size: 1.5rem; line-height: 1; }
+    .close:hover { background: #272c36; color: white; }
+    .modal-description { color: var(--muted); font-size: .9375rem; margin: 0 0 20px; }
+    .summary { border: 1px solid var(--line); border-radius: 12px; padding: 4px 16px; margin: 0 0 20px; background: #0d1015; }
+    .summary > div { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; padding-block: 12px; }
+    .summary > div + div { border-top: 1px solid #252a33; }
+    .summary dt { color: var(--muted); font-size: .875rem; }
+    .summary dd { margin: 0; color: var(--text); font-size: .9375rem; font-weight: 600; }
+    .summary .total { color: var(--cyan); font-size: 1.25rem; }
+    .notice { margin: 0 0 20px; border: 1px solid #584524; background: #211c13; color: var(--warning); border-radius: 10px; padding: 13px 15px; font-size: .875rem; }
+    .notice strong { display: block; color: #ffe0a6; margin-bottom: 3px; }
+    details { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 20px; }
+    summary { color: #d3d8e2; font-size: .875rem; padding: 13px 15px; cursor: pointer; }
+    .recipient { padding: 0 15px 15px; }
+    .recipient label { display: block; font-size: .8125rem; color: var(--muted); margin-bottom: 7px; }
+    .address { display: block; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; width: 100%; margin: 0 0 11px; padding: 12px; background: #090c11; border: 1px solid #353d4a; border-radius: 7px; color: var(--text); font-size: .8125rem; overflow-wrap: anywhere; line-height: 1.7; user-select: all; }
+    .recipient .button { font-size: .875rem; min-height: 42px; }
+    .address-note { font-size: .8125rem; color: var(--muted); margin: 10px 0 0; }
+    .actions { display: grid; gap: 10px; }
+    .status { color: #d3d8e2; font-size: .875rem; border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; margin: 16px 0 0; }
+    .status.warning { color: var(--warning); border-color: #584524; background: #211c13; }
+    .status.success { color: #a9eef6; border-color: #275a63; background: #10252b; }
+    .status:empty { display: none; }
+    @media (max-width: 1000px) {
+      .tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .plan-price { font-size: 2rem; }
+    }
+    @media (max-width: 800px) {
+      .tiers { gap: 14px; }
+      .vip-card { padding: 22px; }
+    }
+    @media (max-width: 660px) {
+      .container { width: calc(100% - 32px); }
+      .nav { padding-block: 21px; gap: 12px; }
+      .nav { flex-wrap: wrap; }
+      .nav-links { order: 3; width: 100%; margin-left: 0; }
+      .nav-links a { padding-left: 0; padding-right: 20px; }
+      .nav-account { margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+      .nav-account .preview-label { display: none; }
+      .brand { font-size: 1.2rem; }
+      .preview-label { font-size: .75rem; }
+      main { padding-top: 20px; }
+      .home { padding: 24px 0 36px; }
+      .home-copy { font-size: 1rem; }
+      .overview { margin-top: 28px; }
+      .overview > div { padding: 15px 10px; }
+      .overview dt { font-size: .8125rem; }
+      .overview dd { font-size: 1.25rem; }
+      .principles { grid-template-columns: 1fr; gap: 20px; }
+      .about { padding-block: 30px 36px; }
+      .intro { margin-bottom: 30px; }
+      .tiers { grid-template-columns: 1fr; gap: 16px; }
+      .vip-card { padding: 24px; }
+      .plan-price { font-size: 2.3rem; }
+      .amount-row { margin-bottom: 18px; padding-top: 15px; }
+      .modal-inner { padding: 22px; }
+      .registration { padding: 24px; margin-block: 22px 36px; }
+      .footer { margin-top: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="container nav">
+    <a class="brand" aria-label="ApexYield home" href="#home">APEX<span>YIELD</span></a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="#home">Home</a>
+      <a href="#about">About</a>
+      <a href="#vip-plans">VIP plans</a>
+    </nav>
+    <div class="nav-account">
+      <span class="preview-label">Front-end preview</span>
+      <a class="button primary" id="nav-signup" href="#signup">Sign up</a>
+      <button class="button secondary" type="button" id="sign-out" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="preview-notice">
+      <strong>Preview only.</strong> Registration creates a local demo profile. Real accounts, deposits, and payouts are not connected. Do not send funds from this page.
+    </div>
+
+    <section class="home" id="home" aria-labelledby="page-title">
+      <p class="eyebrow">Welcome to ApexYield</p>
+      <h1 id="page-title" tabindex="-1">Understand your options.<span>Explore your VIP tier.</span></h1>
+      <p class="home-copy">Five tiers. Clear starting amounts. Explore ApexYield plans from $100 to $20,000, compare the details, and take the time to understand your options.</p>
+      <div class="home-actions">
+        <a class="button primary" id="home-signup" href="#signup">Sign up to view VIP plans <span aria-hidden="true">↗</span></a>
+        <a class="button secondary" href="#about">About ApexYield</a>
+      </div>
+      <dl class="overview" aria-label="Plan overview">
+        <div><dt>VIP tiers</dt><dd>5 plans</dd></div>
+        <div><dt>Starting amount</dt><dd>$100</dd></div>
+        <div><dt>Highest tier</dt><dd>$20,000</dd></div>
+      </dl>
+    </section>
+
+    <section class="about" id="about" aria-labelledby="about-title">
+      <p class="eyebrow">About ApexYield</p>
+      <h2 id="about-title" tabindex="-1">Trust starts with transparency.</h2>
+      <p class="about-lead">ApexYield brings five VIP tiers into one clear overview. Review the starting amounts, explore the individual plan details, and see what is confirmed before making any commitment.</p>
+      <div class="principles">
+        <article><h3>Plan details upfront</h3><p>Every tier shows its starting amount so you can compare all five plans at a glance.</p></article>
+        <article><h3>Clear terms</h3><p>Example rates are labelled, and any rate that has not been defined is shown as unset.</p></article>
+        <article><h3>Visible payment status</h3><p>The portal clearly identifies when payment verification is unavailable. A button click does not confirm a deposit.</p></article>
+      </div>
+    </section>
+
+    <noscript>
+      <p class="noscript">Enable JavaScript to register a preview profile and view the VIP plans. This preview does not accept or verify payments.</p>
+    </noscript>
+
+    <section class="registration" id="signup" aria-labelledby="signup-title" hidden>
+      <p class="eyebrow">ApexYield registration</p>
+      <h2 id="signup-title" tabindex="-1">Create your profile.</h2>
+      <p class="registration-intro">Enter your name and email to view all five VIP plans.</p>
+      <form id="signup-form" method="post" novalidate>
+        <div class="field">
+          <label for="signup-name">Name</label>
+          <input id="signup-name" name="name" type="text" autocomplete="name" placeholder="Your name" maxlength="80" required aria-describedby="name-error">
+          <p class="field-error" id="name-error"></p>
+        </div>
+        <div class="field">
+          <label for="signup-email">Email address</label>
+          <input id="signup-email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com" maxlength="254" required aria-describedby="email-error">
+          <p class="field-error" id="email-error"></p>
+        </div>
+        <p class="registration-note" id="registration-note">This creates a demo profile for this browser tab. Your name and email stay in this browser; no password or verified account is created. Sign out to clear the profile.</p>
+        <button type="submit" class="button primary full" aria-describedby="registration-note">Sign up &amp; view VIP plans</button>
+        <a class="registration-back" href="#home">Back to home</a>
+      </form>
+    </section>
+
+    <section class="plans-section" id="vip-plans" aria-labelledby="plans-title" hidden>
+      <div class="member-summary">
+        <div class="member-info">
+          <h3 id="member-welcome"></h3>
+          <p id="member-email"></p>
+        </div>
+        <span class="preview-label">Demo profile</span>
+      </div>
+      <p class="profile-note" id="profile-storage-note"></p>
+      <div class="plans-header">
+        <p class="eyebrow">VIP 1 — VIP 5</p>
+        <h2 id="plans-title" tabindex="-1">Find your VIP tier.</h2>
+        <p>Compare five plans, from $100 to $20,000. All plan amounts are shown in USD; live crypto payment quotes are not configured.</p>
+      </div>
+      <div class="tiers" aria-label="Available VIP tiers">
+      <article class="vip-card" aria-labelledby="vip-1-title">
+        <div class="card-top"><h3 id="vip-1-title">VIP 1</h3><span class="tier-number" aria-hidden="true">01</span></div>
+        <p class="plan-price">$100</p><p class="price-label">Starting amount · USD</p>
+        <dl class="amount-row"><dt>Example daily rate</dt><dd class="rate">1<small>%</small></dd></dl>
+        <button type="button" class="button full" data-plan="vip1" aria-haspopup="dialog" aria-controls="payment-modal">View VIP 1</button>
+      </article>
+
+      <article class="vip-card" aria-labelledby="vip-2-title">
+        <div class="card-top"><h3 id="vip-2-title">VIP 2</h3><span class="tier-number" aria-hidden="true">02</span></div>
+        <p class="plan-price">$500</p><p class="price-label">Starting amount · USD</p>
+        <dl class="amount-row"><dt>Example daily rate</dt><dd class="rate">2.5<small>%</small></dd></dl>
+        <button type="button" class="button full" data-plan="vip2" aria-haspopup="dialog" aria-controls="payment-modal">View VIP 2</button>
+      </article>
+
+      <article class="vip-card" aria-labelledby="vip-3-title">
+        <div class="card-top"><h3 id="vip-3-title">VIP 3</h3><span class="tier-number" aria-hidden="true">03</span></div>
+        <p class="plan-price">$2,000</p><p class="price-label">Starting amount · USD</p>
+        <dl class="amount-row"><dt>Example daily rate</dt><dd class="rate">5<small>%</small></dd></dl>
+        <button type="button" class="button full" data-plan="vip3" aria-haspopup="dialog" aria-controls="payment-modal">View VIP 3</button>
+      </article>
+
+      <article class="vip-card" aria-labelledby="vip-4-title">
+        <div class="card-top"><h3 id="vip-4-title">VIP 4</h3><span class="tier-number" aria-hidden="true">04</span></div>
+        <p class="plan-price">$10,000</p><p class="price-label">Starting amount · USD</p>
+        <dl class="amount-row"><dt>Daily rate</dt><dd class="rate">Not set</dd></dl>
+        <button type="button" class="button full" data-plan="vip4" aria-haspopup="dialog" aria-controls="payment-modal">View VIP 4</button>
+      </article>
+
+      <article class="vip-card" aria-labelledby="vip-5-title">
+        <div class="card-top"><h3 id="vip-5-title">VIP 5</h3><span class="tier-number" aria-hidden="true">05</span></div>
+        <p class="plan-price">$20,000</p><p class="price-label">Starting amount · USD</p>
+        <dl class="amount-row"><dt>Daily rate</dt><dd class="rate">Not set</dd></dl>
+        <button type="button" class="button full" data-plan="vip5" aria-haspopup="dialog" aria-controls="payment-modal">View VIP 5</button>
+      </article>
+      </div>
+      <p class="rates-note">VIP 1–3 rates are supplied examples, not verified or guaranteed returns. VIP 4–5 rates have not been set. No investment strategy or source of payouts is implemented.</p>
+    </section>
+    <p id="registration-status" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></p>
+  </main>
+
+  <footer class="container footer">
+    <p>ApexYield · Interface preview</p>
+    <p>USD plan amounts · Solana payment preview</p>
+  </footer>
+
+  <dialog id="payment-modal" aria-labelledby="modal-title" aria-describedby="modal-description">
+    <div class="modal-inner">
+      <div class="modal-header">
+        <div><p class="eyebrow">Tier details</p><h2 id="modal-title">VIP tier</h2></div>
+        <button type="button" class="close" id="close-modal" aria-label="Close tier details" autofocus>&times;</button>
+      </div>
+      <p class="modal-description" id="modal-description">Review the example terms. This is not a live checkout.</p>
+
+      <dl class="summary">
+        <div><dt>Starting amount (USD)</dt><dd class="total" id="modal-amount"></dd></div>
+        <div><dt id="modal-rate-label">Example daily rate</dt><dd id="modal-rate"></dd></div>
+        <div><dt>Payment asset / network</dt><dd>USDT / Solana</dd></div>
+        <div><dt>USDT payment quote</dt><dd>Not configured</dd></div>
+      </dl>
+
+      <p class="notice"><strong>Payments are not enabled.</strong>No payment service is connected. No funds can be verified and no account can be activated here.</p>
+
+      <details id="recipient-details">
+        <summary>View configured recipient</summary>
+        <div class="recipient">
+          <label id="address-label">Address from the supplied code · unverified</label>
+          <code class="address" id="wallet-address" tabindex="0" aria-labelledby="address-label"></code>
+          <button type="button" class="button secondary" id="copy-address">Copy address</button>
+          <p class="address-note">For configuration review only. Do not send funds. SOL and USDT are different assets.</p>
+        </div>
+      </details>
+
+      <div class="actions">
+        <button type="button" class="button primary full" id="check-payment">Check payment status</button>
+        <button type="button" class="button secondary full" id="back-to-tiers">Back to tiers</button>
+      </div>
+      <p id="payment-status" class="status" role="status" aria-live="polite" aria-atomic="true"></p>
+      <p id="copy-status" class="status" role="status" aria-live="polite" aria-atomic="true"></p>
+    </div>
+  </dialog>
+
+  <script>
+    'use strict';
+
+    (() => {
+      // Display-only configuration. Never use browser-side values to authorize payments.
+      const CONFIG = Object.freeze({
+        address: 'PKu7aRDnBW3pvzKQcE3eYZAgg8rDxgQSWsBksAg58D8',
+        asset: 'USDT',
+        displayCurrency: 'USD',
+        plans: Object.freeze({
+          vip1: Object.freeze({ name: 'VIP 1', minimum: 100, dailyPercent: 1 }),
+          vip2: Object.freeze({ name: 'VIP 2', minimum: 500, dailyPercent: 2.5 }),
+          vip3: Object.freeze({ name: 'VIP 3', minimum: 2000, dailyPercent: 5 }),
+          vip4: Object.freeze({ name: 'VIP 4', minimum: 10000, dailyPercent: null }),
+          vip5: Object.freeze({ name: 'VIP 5', minimum: 20000, dailyPercent: null })
+        })
+      });
+
+      const get = (id) => document.getElementById(id);
+      const modal = get('payment-modal');
+      const copyButton = get('copy-address');
+      const formatter = new Intl.NumberFormat('en-US');
+      const currencyFormatter = new Intl.NumberFormat('en-US', {
+        style: 'currency', currency: CONFIG.displayCurrency, maximumFractionDigits: 0
+      });
+      let previousFocus = null;
+      let modalSession = 0;
+
+      // This is a local preview profile, never an authentication or authorization token.
+      const PROFILE_KEY = 'apexyield.preview.profile.v1';
+      let profile = null;
+      let profileStorage = 'memory';
+      const signupForm = get('signup-form');
+      const nameInput = get('signup-name');
+      const emailInput = get('signup-email');
+
+      function validProfile(value) {
+        return value && value.version === 1 &&
+          typeof value.name === 'string' && value.name.trim().length > 0 && value.name.length <= 80 &&
+          typeof value.email === 'string' && value.email.length <= 254 &&
+          /^[^\s@]+@[^\s@]+$/.test(value.email);
+      }
+
+      try {
+        const stored = sessionStorage.getItem(PROFILE_KEY);
+        if (stored && stored.length <= 2000) {
+          const value = JSON.parse(stored);
+          if (validProfile(value)) {
+            profile = { version: 1, name: value.name.trim(), email: value.email.trim() };
+            profileStorage = 'session';
+          } else {
+            sessionStorage.removeItem(PROFILE_KEY);
+          }
+        } else if (stored) {
+          sessionStorage.removeItem(PROFILE_KEY);
+        }
+      } catch (_) {
+        // A blocked or malformed storage entry must not break registration.
+        try { sessionStorage.removeItem(PROFILE_KEY); } catch (_) { /* In-memory mode. */ }
+      }
+
+      function syncProfileUI() {
+        const registered = Boolean(profile);
+        get('nav-signup').hidden = registered;
+        get('sign-out').hidden = !registered;
+        get('home-signup').href = registered ? '#vip-plans' : '#signup';
+        get('home-signup').textContent = registered ? 'View VIP plans' : 'Sign up to view VIP plans';
+        get('member-welcome').textContent = registered ? 'Welcome, ' + profile.name + '.' : '';
+        get('member-email').textContent = registered ? profile.email : '';
+        get('profile-storage-note').textContent = registered
+          ? (profileStorage === 'session'
+              ? 'Your demo profile is remembered in this browser tab. Your email has not been verified.'
+              : 'Browser storage is unavailable. Your demo profile will clear when this page reloads.')
+          : '';
+      }
+
+      function renderRoute(moveFocus = false) {
+        let route = window.location.hash.slice(1) || 'home';
+        if (!['home', 'about', 'signup', 'vip-plans'].includes(route)) route = 'home';
+        if (route === 'vip-plans' && !profile) route = 'signup';
+        if (route === 'signup' && profile) route = 'vip-plans';
+
+        // Normalize direct links as well as navigation; a logged-out VIP link opens signup.
+        if (window.location.hash !== '#' + route) {
+          try {
+            history.replaceState(null, '', '#' + route);
+          } catch (_) {
+            window.location.hash = route;
+          }
+        }
+        const onHome = route === 'home' || route === 'about';
+        get('home').hidden = !onHome;
+        get('about').hidden = !onHome;
+        get('signup').hidden = route !== 'signup';
+        get('vip-plans').hidden = route !== 'vip-plans' || !profile;
+        if (modal.open) closePayment();
+        syncProfileUI();
+        document.title = 'ApexYield | ' + (route === 'signup' ? 'Sign up' : route === 'vip-plans' ? 'VIP Plans' : 'Home');
+        document.querySelectorAll('.nav-links a').forEach((link) => {
+          if (link.getAttribute('href') === '#' + route) link.setAttribute('aria-current', 'page');
+          else link.removeAttribute('aria-current');
+        });
+        if (moveFocus) {
+          const heading = get(route === 'signup' ? 'signup-title' : route === 'vip-plans' ? 'plans-title' : route === 'about' ? 'about-title' : 'page-title');
+          heading.focus({ preventScroll: true });
+          get(route).scrollIntoView({ block: 'start' });
+        }
+      }
+
+      function navigate(route) {
+        if (window.location.hash === '#' + route) renderRoute(true);
+        else window.location.hash = route;
+      }
+
+      function clearFieldError(input, errorId) {
+        input.removeAttribute('aria-invalid');
+        get(errorId).textContent = '';
+      }
+      nameInput.addEventListener('input', () => clearFieldError(nameInput, 'name-error'));
+      emailInput.addEventListener('input', () => clearFieldError(emailInput, 'email-error'));
+
+      signupForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (profile) { navigate('vip-plans'); return; }
+        const name = nameInput.value.trim();
+        const email = emailInput.value.trim();
+        nameInput.value = name;
+        emailInput.value = email;
+        clearFieldError(nameInput, 'name-error');
+        clearFieldError(emailInput, 'email-error');
+        let firstInvalid = null;
+        if (!name || name.length > 80) {
+          get('name-error').textContent = !name ? 'Enter your name.' : 'Use 80 characters or fewer.';
+          nameInput.setAttribute('aria-invalid', 'true');
+          firstInvalid = nameInput;
+        }
+        if (!email || email.length > 254 || !emailInput.validity.valid) {
+          get('email-error').textContent = 'Enter a valid email address, such as you@example.com.';
+          emailInput.setAttribute('aria-invalid', 'true');
+          if (!firstInvalid) firstInvalid = emailInput;
+        }
+        if (firstInvalid) {
+          get('registration-status').textContent = 'Please check the highlighted registration fields.';
+          firstInvalid.focus();
+          return;
+        }
+
+        profile = { version: 1, name, email };
+        profileStorage = 'memory';
+        try {
+          sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+          profileStorage = 'session';
+        } catch (_) {
+          // The requested preview flow still works if storage is disabled.
+        }
+        signupForm.reset();
+        syncProfileUI();
+        get('registration-status').textContent = 'Demo profile created. You can now view the five VIP plans.';
+        navigate('vip-plans');
+      });
+
+      get('sign-out').addEventListener('click', () => {
+        profile = null;
+        profileStorage = 'memory';
+        try { sessionStorage.removeItem(PROFILE_KEY); } catch (_) { /* Clear the active view below. */ }
+        if (modal.open) closePayment();
+        get('vip-plans').hidden = true;
+        signupForm.reset();
+        clearFieldError(nameInput, 'name-error');
+        clearFieldError(emailInput, 'email-error');
+        syncProfileUI();
+        get('registration-status').textContent = 'Signed out of the demo profile.';
+        navigate('home');
+      });
+
+      window.addEventListener('hashchange', () => renderRoute(true));
+      // Restored pages must reapply the preview gate after back/forward navigation.
+      window.addEventListener('pageshow', () => renderRoute(false));
+
+      get('wallet-address').textContent = CONFIG.address;
+
+      // Keep the visible cards aligned with the display configuration.
+      document.querySelectorAll('[data-plan]').forEach((button) => {
+        const plan = CONFIG.plans[button.dataset.plan];
+        const card = button.closest('.vip-card');
+        card.querySelector('h3').textContent = plan.name;
+        card.querySelector('.plan-price').textContent = currencyFormatter.format(plan.minimum);
+        if (plan.dailyPercent === null) {
+          card.querySelector('dt').textContent = 'Daily rate';
+          card.querySelector('.rate').textContent = 'Not set';
+        } else {
+          card.querySelector('.rate').replaceChildren(
+            document.createTextNode(formatter.format(plan.dailyPercent)),
+            Object.assign(document.createElement('small'), { textContent: '%' })
+          );
+        }
+        button.textContent = 'View ' + plan.name;
+        button.addEventListener('click', () => openPayment(button.dataset.plan));
+      });
+
+      function setStatus(id, message, kind = '') {
+        const element = get(id);
+        element.className = 'status' + (kind ? ' ' + kind : '');
+        element.textContent = message;
+      }
+
+      function openPayment(planId) {
+        if (!profile) { navigate('signup'); return; }
+        const plan = CONFIG.plans[planId];
+        if (!plan || modal.open) return;
+        previousFocus = document.activeElement;
+        modalSession += 1;
+        get('modal-title').textContent = plan.name;
+        get('modal-amount').textContent = currencyFormatter.format(plan.minimum);
+        get('modal-rate-label').textContent = plan.dailyPercent === null ? 'Daily rate' : 'Example daily rate';
+        get('modal-rate').textContent = plan.dailyPercent === null ? 'Not set' : formatter.format(plan.dailyPercent) + '% / day';
+        get('recipient-details').open = false;
+        setStatus('payment-status', '');
+        setStatus('copy-status', '');
+        copyButton.disabled = false;
+        copyButton.textContent = 'Copy address';
+        modal.showModal();
+        document.body.classList.add('modal-open');
+      }
+
+      function closePayment() {
+        if (modal.open) modal.close();
+      }
+
+      get('close-modal').addEventListener('click', closePayment);
+      get('back-to-tiers').addEventListener('click', closePayment);
+
+      // Native <dialog> provides Escape handling and prevents focus leaving the modal.
+      modal.addEventListener('close', () => {
+        modalSession += 1;
+        document.body.classList.remove('modal-open');
+        if (previousFocus && previousFocus.isConnected) previousFocus.focus();
+      });
+
+      // Close only when both pointer-down and click occur on the backdrop.
+      // A drag that begins inside the modal must not dismiss it.
+      let pressedBackdrop = false;
+      function isBackdrop(event) {
+        const rect = modal.getBoundingClientRect();
+        return event.target === modal && (
+          event.clientX < rect.left || event.clientX > rect.right ||
+          event.clientY < rect.top || event.clientY > rect.bottom
+        );
+      }
+      modal.addEventListener('pointerdown', (event) => {
+        pressedBackdrop = isBackdrop(event);
+      });
+      modal.addEventListener('click', (event) => {
+        if (pressedBackdrop && isBackdrop(event)) closePayment();
+        pressedBackdrop = false;
+      });
+
+      async function copyText(text) {
+        if (window.isSecureContext && navigator.clipboard?.writeText) {
+          try {
+            await navigator.clipboard.writeText(text);
+            return true;
+          } catch (_) {
+            // Clipboard access can be denied. Try a local-file-compatible fallback.
+          }
+        }
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.readOnly = true;
+        textarea.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+        // Keep it inside the modal, since the rest of the document is inert.
+        modal.appendChild(textarea);
+        textarea.select();
+        textarea.setSelectionRange(0, text.length);
+        let copied = false;
+        try {
+          copied = document.execCommand('copy');
+        } catch (_) {
+          copied = false;
+        } finally {
+          textarea.remove();
+        }
+        return copied;
+      }
+
+      copyButton.addEventListener('click', async () => {
+        const session = modalSession;
+        copyButton.disabled = true;
+        copyButton.textContent = 'Copying…';
+        const copied = await copyText(CONFIG.address);
+        // A late clipboard result must not overwrite a newly opened tier's state.
+        if (!modal.open || session !== modalSession) return;
+        copyButton.disabled = false;
+        copyButton.textContent = copied ? 'Address copied' : 'Try copying again';
+        setStatus('copy-status', copied
+          ? 'Address copied for review. This preview does not accept deposits.'
+          : 'Automatic copying was blocked. Select the address and use your device’s Copy command.',
+          copied ? 'success' : 'warning');
+        copyButton.focus();
+        if (!copied) {
+          const address = get('wallet-address');
+          address.focus();
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(address);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      });
+
+      get('check-payment').addEventListener('click', () => {
+        // No simulated payment success, fake balance, or unverified account activation.
+        // A real integration must use an authenticated backend and verified order state.
+        setStatus('payment-status',
+          'Payment verification is not connected. No transaction was checked and no account was activated.',
+          'warning');
+      });
+
+      renderRoute(false);
+    })();
+  </script>
+</body>
+</html>
